@@ -11,6 +11,9 @@ fn get_rules() -> Vec<Rewrite<SymbolLang, ()>> {
         rw!("R"; "(join ?s1 (join ?s2 ?x ?y) ?z)" => "(join ?s2 ?x (join ?s1 ?y ?z))"),
         rw!("E"; "(join ?s1 (split1 ?s2 ?x) (split2 ?s3 ?x))" => "?x"),
         rw!("C"; "(join ?s1 ?x ?y)" => "(join ?s1 ?y ?x)"),
+        rw!("PL"; "(join ?s1 (pure ?s2 ?x) ?y)" => "(pure ?s2 (join ?s1 ?x ?y))"),
+        rw!("PR"; "(join ?s1 ?x (pure ?s2 ?y))" => "(pure ?s2 (join ?s1 ?x ?y))"),
+        rw!("PE"; "(pure ?s1 (pure ?s2 ?x))" => "(pure ?s1 ?x)"),
     ]
 }
 
@@ -99,39 +102,39 @@ fn extract_args_from_sexps(repr: &str, rule: &str) -> Vec<String> {
     }
 
     match rule {
-        "L" => {
-            // Expect: (join ?s1 ?x (join ?s2 ?y ?z))
-            // s1 is at index 1
-            // The nested join is at index 3, and its element at index 1 is s2.
-            let s1 = list.get(1).map(|s| s.to_string()).unwrap_or_default();
-            let s2 = if list.len() > 3 {
-                if let Sexp::List(nested) = &list[3] {
-                    nested.get(1).map(|s| s.to_string()).unwrap_or_default()
-                } else {
-                    "".to_string()
-                }
-            } else {
-                "".to_string()
-            };
-            vec![s1, s2]
-        }
-        "R" => {
-            // Expect: (join ?s1 (join ?s2 ?x ?y) ?z)
-            // s1 is at index 1
-            // The nested join is at index 2, and its element at index 1 is s2.
-            let s1 = list.get(1).map(|s| s.to_string()).unwrap_or_default();
-            let s2 = if list.len() > 2 {
-                if let Sexp::List(nested) = &list[2] {
-                    nested.get(1).map(|s| s.to_string()).unwrap_or_default()
-                } else {
-                    "".to_string()
-                }
-            } else {
-                "".to_string()
-            };
-            vec![s1, s2]
-        }
-        "E" | "C" => {
+        // "L" => {
+        //     // Expect: (join ?s1 ?x (join ?s2 ?y ?z))
+        //     // s1 is at index 1
+        //     // The nested join is at index 3, and its element at index 1 is s2.
+        //     let s1 = list.get(1).map(|s| s.to_string()).unwrap_or_default();
+        //     let s2 = if list.len() > 3 {
+        //         if let Sexp::List(nested) = &list[3] {
+        //             nested.get(1).map(|s| s.to_string()).unwrap_or_default()
+        //         } else {
+        //             "".to_string()
+        //         }
+        //     } else {
+        //         "".to_string()
+        //     };
+        //     vec![s1, s2]
+        // }
+        // "R" => {
+        //     // Expect: (join ?s1 (join ?s2 ?x ?y) ?z)
+        //     // s1 is at index 1
+        //     // The nested join is at index 2, and its element at index 1 is s2.
+        //     let s1 = list.get(1).map(|s| s.to_string()).unwrap_or_default();
+        //     let s2 = if list.len() > 2 {
+        //         if let Sexp::List(nested) = &list[2] {
+        //             nested.get(1).map(|s| s.to_string()).unwrap_or_default()
+        //         } else {
+        //             "".to_string()
+        //         }
+        //     } else {
+        //         "".to_string()
+        //     };
+        //     vec![s1, s2]
+        // }
+        "E" | "C" | "L" | "R" | "PE" | "PL" | "PR" => {
             // For these, we only need ?s1, which is at index 1.
             let s1 = list.get(1).map(|s| s.to_string()).unwrap_or_default();
             vec![s1]
